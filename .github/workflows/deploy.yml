@@ -23,7 +23,6 @@ jobs:
                 aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
                 aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
                 aws-region: ${{ env.AWS_REGION }}
-            
                 
             - name: SonarCloud Scan
               uses: sonarsource/sonarqube-scan-action@v4
@@ -33,14 +32,14 @@ jobs:
                 projectBaseDir: web-page-deploy-devops/src
                 args: >
                   -Dsonar.organization=rovert19
-                  -Dsonar.projectKey=rovert19_prueba-tecnica-devops
+                  -Dsonar.projectKey=rovert19_prueba-tecnica-devops-fargate
                   -Dsonar.verbose=true
                         
             - name: Check Quality Status
               id: check-quality-status
               uses: rovert19/sonarcloud-quality-check@v0.1
               with:
-                sonar-project-key: rovert19_prueba-tecnica-devops
+                sonar-project-key: rovert19_prueba-tecnica-devops-fargate
                 sonar-token: ${{ secrets.SONAR_TOKEN }}
                 branch: main
                 
