@@ -90,7 +90,10 @@ jobs:
             CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ env.ECR_REPOSITORY }}:${{ needs.build-image.outputs.image_tag }}"' task-definition.json | jq -c '.containerDefinitions'`
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
               --family "${{ env.TASK_DEFINITION }}" --requires-compatibilities "FARGATE" \
-              --network-mode "awsvpc" --query taskDefinition --memory 8192 > new-task-definition.json
+              --network-mode "awsvpc" \
+              --task-role-arn "ecs-task-execution-role"
+              --execution-role-arn "arn:aws:iam::876241483024:role/ecs-task-execution-role"
+              --query taskDefinition --memory 8192 > new-task-definition.json
             
             PATH_FILE=`readlink -f new-task-definition.json`
             echo "path_file=$PATH_FILE" >> $GITHUB_OUTPUT
