@@ -30,32 +30,32 @@ jobs:
                 aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
                 aws-region: ${{ env.AWS_REGION }}
                 
-            - name: SonarCloud Scan
-              uses: sonarsource/sonarqube-scan-action@v4
-              env:
-                SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              with:
-                projectBaseDir: web-page-deploy-devops/src
-                args: >
-                  -Dsonar.organization=rovert19
-                  -Dsonar.projectKey=rovert19_prueba-tecnica-devops-fargate
-                  -Dsonar.verbose=true
+            # - name: SonarCloud Scan
+            #   uses: sonarsource/sonarqube-scan-action@v4
+            #   env:
+            #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            #   with:
+            #     projectBaseDir: web-page-deploy-devops/src
+            #     args: >
+            #       -Dsonar.organization=rovert19
+            #       -Dsonar.projectKey=rovert19_prueba-tecnica-devops-fargate
+            #       -Dsonar.verbose=true
                         
-            - name: Check Quality Status
-              id: check-quality-status
-              uses: rovert19/sonarcloud-quality-check@v0.1
-              with:
-                sonar-project-key: rovert19_prueba-tecnica-devops-fargate
-                sonar-token: ${{ secrets.SONAR_TOKEN }}
-                branch: main
+            # - name: Check Quality Status
+            #   id: check-quality-status
+            #   uses: rovert19/sonarcloud-quality-check@v0.1
+            #   with:
+            #     sonar-project-key: rovert19_prueba-tecnica-devops-fargate
+            #     sonar-token: ${{ secrets.SONAR_TOKEN }}
+            #     branch: main
                 
-            - name: Quality Status Result
-              run: |
-                echo "${{ steps.check-quality-status.outputs.project-status }}"
+            # - name: Quality Status Result
+            #   run: |
+            #     echo "${{ steps.check-quality-status.outputs.project-status }}"
                             
-            - name: Login to ECR
-              id: login-aws-ecr
-              uses: aws-actions/amazon-ecr-login@v2
+            # - name: Login to ECR
+            #   id: login-aws-ecr
+            #   uses: aws-actions/amazon-ecr-login@v2
             
             - name: Build and push docker image to ECR
               id: build-push-image
@@ -90,7 +90,7 @@ jobs:
             IMAGE: ${{needs.build-image.outputs.image}}
           run: |
             readlink -f task-definition.json
-            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "$(IMAGE)"' task-definition.json | jq '.containerDefinitions'`
+            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ needs.build-image.outputs.image }}"' task-definition.json | jq '.containerDefinitions'`
             echo $CONTAINER_DEFINITIONS
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
               --family ${{ env.TASK_DEFINITION }} --query taskDefinition > new-task.definition.json
