@@ -90,7 +90,7 @@ jobs:
             IMAGE: ${{needs.build-image.outputs.image}}
           run: |
             readlink -f task-definition.json
-            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${IMAGE}"' task-definition.json | jq '.containerDefinitions'`
+            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "$(IMAGE)"' task-definition.json | jq '.containerDefinitions'`
             echo $CONTAINER_DEFINITIONS
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
               --family ${{ env.TASK_DEFINITION }} --query taskDefinition > new-task.definition.json
