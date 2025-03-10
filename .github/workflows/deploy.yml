@@ -53,9 +53,9 @@ jobs:
             #   run: |
             #     echo "${{ steps.check-quality-status.outputs.project-status }}"
                             
-            # - name: Login to ECR
-            #   id: login-aws-ecr
-            #   uses: aws-actions/amazon-ecr-login@v2
+            - name: Login to ECR
+              id: login-aws-ecr
+              uses: aws-actions/amazon-ecr-login@v2
             
             - name: Build and push docker image to ECR
               id: build-push-image
