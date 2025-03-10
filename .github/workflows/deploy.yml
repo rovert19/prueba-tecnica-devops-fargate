@@ -87,9 +87,10 @@ jobs:
         - name: Register new revision from task definition
           id: new-task-def
           env:
-            IMAGE: ${{needs.build-image.outputs.image}}
+            IMAGE: ${{ needs.build-image.outputs.image }}
           run: |
             readlink -f task-definition.json
+            echo $IMAGE
             CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "$IMAGE"' task-definition.json | jq '.containerDefinitions'`
             echo $CONTAINER_DEFINITIONS
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
