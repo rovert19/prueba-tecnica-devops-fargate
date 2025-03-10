@@ -6,7 +6,7 @@ on:
 
 env:
     AWS_REGION: us-east-1
-    ECR_REPOSITORY: react-web-app
+    ECR_REPOSITORY: 876241483024.dkr.ecr.us-east-1.amazonaws.com/react-web-app
     ECS_CLUSTER: WebCluster
     TASK_DEFINITION: task-deploy-react-app-image
     ECS_SERVICE: react-web-service
@@ -60,12 +60,12 @@ jobs:
         - name: Build and push docker image to ECR
           id: build-push-image
           env:
-            REGISTRY: ${{ steps.login-aws-ecr.outputs.registry }}
+            # REGISTRY: ${{ steps.login-aws-ecr.outputs.registry }}
             IMAGE_TAG: ${{ github.sha }}
           run: |
-            docker build -t $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
-            docker push $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-            echo "image=$REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+            docker build -t ${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+            docker push ${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+            echo "image=${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
     
     deploy:
       name: Deploy image in AWS Fargate
@@ -89,15 +89,14 @@ jobs:
           env:
             IMAGE: ${{needs.build-image.outputs.image}}
           run: |
-            readlink -f task-definition.json
             echo $IMAGE
             CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "$IMAGE"' task-definition.json | jq '.containerDefinitions'`
             echo $CONTAINER_DEFINITIONS
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
-              --family ${{ env.TASK_DEFINITION }} --query taskDefinition > new-task.definition.json
+              --family "${{ env.TASK_DEFINITION }}" --query taskDefinition --memory 8192 > new-task-definition.json
             
             PATH_FILE=`readlink -f new-task-definition.json`
-            echo "path_file=$(readlink -f new-task-definition.json)" >> $GITHUB_OUTPUT
+            echo "path_file=$PATH_FILE" >> $GITHUB_OUTPUT
         
         - name: Deploy to ECS Service
           uses: aws-actions/amazon-ecs-deploy-task-definition@v2
