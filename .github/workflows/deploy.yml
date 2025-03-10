@@ -6,11 +6,17 @@ on:
 
 env:
     AWS_REGION: us-east-1
+    ECR_REPOSITORY: react-web-app
+    ECS_CLUSTER: WebCluster
+    TASK_DEFINITION: task-deploy-react-app-image
+    ECS_SERVICE: react-web-service
 
 jobs:
     build-image:
         name: Build image app
         runs-on: ubuntu-latest
+        outputs:
+          image: ${{ steps.build-push-image.outputs.image }}
         steps:
             - name: Checkout Repository
               uses: actions/checkout@v4
@@ -52,10 +58,47 @@ jobs:
               uses: aws-actions/amazon-ecr-login@v2
             
             - name: Build and push docker image to ECR
+              id: build-push-image
               env:
                 REGISTRY: ${{ steps.login-aws-ecr.outputs.registry }}
-                REPOSITORY: react-web-app
                 IMAGE_TAG: ${{ github.sha }}
               run: |
-                docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-                docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+                docker build -t $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+                docker push $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+                echo "image=$REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+    
+    deploy:
+      name: Deploy image in AWS Fargate
+      needs: build-image
+      runs-on: ubuntu-latest
+      steps:
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+           aws-region: ${{ env.AWS_REGION }}
+
+        - name: Get task definition 
+          run: |
+            aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} \
+              --query taskDefinition --output json > task-definition.json
+
+        - name: Register new revision from task definition
+          id: new-task-def
+          run: |
+            readlink -f task-definition.json
+            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ needs.build-image.outputs.image }}"' task-definition.json | jq '.containerDefinitions'`
+            aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
+              --family ${{ env.TASK_DEFINITION }} --query taskDefinition > new-task.definition.json
+            
+            PATH_FILE=`readlink -f new-task-definition.json`
+            echo "path_file=$(readlink -f new-task-definition.json)" >> $GITHUB_OUTPUT
+        
+        - name: Deploy to ECS Service
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+          with:
+            task-definition: ${{ steps.new-task-def.outputs.path_file }}
+            service: ${{ env.ECS_SERVICE }}
+            cluster: ${{ env.ECS_CLUSTER }}
+            wait-for-service-stability: true
