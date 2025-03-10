@@ -15,8 +15,6 @@ jobs:
     build-image:
       name: Build image app
       runs-on: ubuntu-latest
-      outputs:
-        image: ${{ steps.build-push-image.outputs.image }}
       steps:
         - name: Checkout Repository
           uses: actions/checkout@v4
@@ -65,7 +63,9 @@ jobs:
           run: |
             docker build -t ${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
             docker push ${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-            echo "image=${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+            echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+      outputs:
+        image_tag: ${{ steps.build-push-image.outputs.image_tag }}
     
     deploy:
       name: Deploy image in AWS Fargate
@@ -87,10 +87,10 @@ jobs:
         - name: Register new revision from task definition
           id: new-task-def
           env:
-            IMAGE: ${{needs.build-image.outputs.image}}
+            IMAGE_TAG: ${{needs.build-image.outputs.image_tag}}
           run: |
             echo $IMAGE
-            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "$IMAGE"' task-definition.json | jq '.containerDefinitions'`
+            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ env.ECR_REPOSITORY }}:$IMAGE_TAG"' task-definition.json | jq '.containerDefinitions'`
             echo $CONTAINER_DEFINITIONS
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
               --family "${{ env.TASK_DEFINITION }}" --query taskDefinition --memory 8192 > new-task-definition.json
