@@ -89,8 +89,8 @@ jobs:
           env:
             IMAGE_TAG: ${{needs.build-image.outputs.image_tag}}
           run: |
-            echo $IMAGE
-            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ env.ECR_REPOSITORY }}:${ IMAGE_TAG }"' task-definition.json | jq '.containerDefinitions'`
+            echo $IMAGE_TAG
+            CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ env.ECR_REPOSITORY }}:${{ needs.build-image.outputs.image_tag }}"' task-definition.json | jq '.containerDefinitions'`
             echo $CONTAINER_DEFINITIONS
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
               --family "${{ env.TASK_DEFINITION }}" --query taskDefinition --memory 8192 > new-task-definition.json
