@@ -88,7 +88,7 @@ jobs:
           id: new-task-def
           run: |
             CONTAINER_DEFINITIONS=`jq '.containerDefinitions[0].image = "${{ env.ECR_REPOSITORY }}:${{ needs.build-image.outputs.image_tag }}"' task-definition.json | jq '.containerDefinitions'`
-            CONTAINER_DEFINITIONS=$CONTAINER_DEFINITIONS.Replace('"', '\"')
+            CONTAINER_DEFINITIONS=`toJSON($CONTAINER_DEFINITIONS)`
             aws ecs register-task-definition --container-definitions $CONTAINER_DEFINITIONS \
               --family "${{ env.TASK_DEFINITION }}" --query taskDefinition --memory 8192 > new-task-definition.json
             
