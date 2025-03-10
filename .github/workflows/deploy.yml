@@ -65,8 +65,7 @@ jobs:
           run: |
             docker build -t $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
             docker push $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-            echo $REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-            echo "image=$REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+            echo "image=$REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
     
     deploy:
       name: Deploy image in AWS Fargate
@@ -88,7 +87,7 @@ jobs:
         - name: Register new revision from task definition
           id: new-task-def
           env:
-            IMAGE: ${{ needs.build-image.outputs.image }}
+            IMAGE: ${{needs.build-image.outputs.image}}
           run: |
             readlink -f task-definition.json
             echo $IMAGE
